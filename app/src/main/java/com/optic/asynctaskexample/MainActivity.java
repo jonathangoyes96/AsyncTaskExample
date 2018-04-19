@@ -11,10 +11,22 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.optic.asynctaskexample.Models.Post;
+import com.optic.asynctaskexample.Parser.Json;
+import com.optic.asynctaskexample.URL.HttpManager;
+
+import org.json.JSONException;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity {
 
     private ProgressBar mProgressBar;
     private TextView mTextViewData;
+
+    private List<Post> postList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,14 +55,31 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /*
-     * ONCLICK CORRER TAREA ASINCRONA
+     * ONCLICK EJECUTAR TAREA ASINCRONA
      */
     public void OnClickRunAsyncTask(View view) {
         if(isOnline()) {
-            Toast.makeText(this, "Todo OK", Toast.LENGTH_SHORT).show();
+            //MyTask myTask = new MyTask();
+            //myTask.execute("https://jsonplaceholder.typicode.com/posts");
+
+            TaskCountry taskCountry = new TaskCountry();
+            taskCountry.execute("http://services.groupkt.com/country/get/all");
+
         }
         else {
             Toast.makeText(this, "No hay conexion a internet", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /*
+     * METODO QUE PERMITE PROCESAR LOS DATOS
+     */
+    public void processData() {
+        // mTextViewData.append(data + "\n");
+        Toast.makeText(this, String.valueOf(postList.size()), Toast.LENGTH_SHORT).show();
+
+        for(Post post  : postList) {
+            mTextViewData.append(post.toString());
         }
     }
 
@@ -64,10 +93,47 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected String doInBackground(String... strings) {
-            for(int i = 1; i < 50; i++) {
-                // PASANDO INFORMACION DESDE UN HILO DE SEGUNDO PLANO AL HILO PRINCIPAL
-                publishProgress(String.valueOf(i));
+            String content = null;
+            try {
+                content = HttpManager.getData(strings[0]);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
+
+            return content;
+        }
+
+        @Override
+        protected void onProgressUpdate(String... values) {
+            super.onProgressUpdate(values);
+            processData();
+        }
+
+        // String s CONTIENE TODOS LOS DATOS PROVENIENTES DE INTERNET
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            try {
+                postList = Json.getDataJson(s);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            processData();
+            mProgressBar.setVisibility(View.GONE);
+        }
+    }
+
+    public class TaskCountry extends AsyncTask<String , String, String > {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+        }
+
+        @Override
+        protected String doInBackground(String... strings) {
+            return null;
         }
 
         @Override
